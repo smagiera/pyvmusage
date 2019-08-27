@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>VM Status</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style type="text/css">
+      .container {
+        padding-top: 100px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nazwa VM</th>
+                    <th scope="col">vCPU dost.</th>
+                    <th scope="col">CPU max</th>
+                    <th scope="col">CPU avg</th>
+                    <th scope="col">RAM dost.</th>
+                    <th scope="col">RAM max</th>
+                    <th scope="col">RAM avg</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    {% if item.mem_size %}
+                    <td>{{loop.index}}.</td>
+                    <td>{{item.name}}</td>
+                    <td>{{item.cpu_num}}</td>
+                    <td>{{item.cpu_max}}%</td>
+                    <td>{{item.cpu_avg}}%</td>
+                    <td>{{item.mem_size}} MB</td>
+                    <td>{{item.mem_max}}%</td>
+                    <td>{{item.mem_avg}}%</td>
+                    {% else %}
+                    <td>{{loop.index}}.</td>
+                    <td class="text-muted">{{item.name}}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+  </body>
+</html>
