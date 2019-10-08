@@ -17,15 +17,11 @@ import getpass
 
 import ssl
 
-#vcenter = 'lab-vcenter.lab.abs'
-#login = 'samuelm@lab.abs'
-#password = 'siusiak123!'
-#vmnames = ['av-wieliczka-proxy', 'DJJHK05J2', 'SRV-Stefan', 'TERMINAL', 'VCSA02', 'vReplication02', 'TEST-MARCIN', 'Windows2012R2Test']
 vm_objects = []
 interval = 360
 
 class VM:
-    def __init__(self, name, cpu_num, cpu_avg, cpu_max, mem_size, mem_avg, mem_max):
+    def __init__(self, name, cpu_num, cpu_avg, cpu_max, mem_size, mem_avg, mem_max, c_free):
         self.name = name
         self.cpu_num = cpu_num
         self.cpu_avg = cpu_avg
@@ -33,6 +29,7 @@ class VM:
         self.mem_size = mem_size
         self.mem_avg = mem_avg
         self.mem_max = mem_max
+        self.c_free = c_free
 
 def GetArgs():
     """
@@ -57,8 +54,6 @@ def BuildQuery(content, vchtime, counterId, instance, vm, interval):
     metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance=instance)
     startTime = vchtime - timedelta(days=30)
     endTime = vchtime
-    #startTime = vchtime - timedelta(minutes=(interval + 1))
-    #endTime = vchtime - timedelta(minutes=1)
     query = vim.PerformanceManager.QuerySpec(entity=vm, metricId=[metricId], startTime=startTime,
                                              endTime=endTime)
     perfResults = perfManager.QueryPerf(querySpec=[query])
@@ -98,34 +93,6 @@ def ListVms(content):
                     listofvms.append(vm.summary.config.name)
     return listofvms
 
-
-
-def PrintVmInfo(vm, content, vchtime, interval, perf_dict, ):
-    #statInt = interval * 3  # There are 3 20s samples in each minute
-    statInt = 360
-    
-    #CPU Usage Average % - NOTE: values are type LONG so needs divided by 100 for percentage
-    statCpuUsage = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'cpu.usage.average')), "", vm, interval)
-    cpuUsageLen = len(statCpuUsage[0].value[0].value)
-    cpuUsage = ((float(sum(statCpuUsage[0].value[0].value)) / cpuUsageLen) / 100)
-	#CPU Usage Max
-    statCpuUsageMax = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'cpu.usage.average')), "", vm, interval)
-    cpuUsageMax = statCpuUsage[0].value[0].value
-	#RAM
-    statMemoryUsage = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'mem.usage.average')), "", vm, interval)
-    memoryUsageLen = len(statMemoryUsage[0].value[0].value)
-    memoryUsage = (float(sum(statMemoryUsage[0].value[0].value)) / memoryUsageLen)
-	#RAM Max
-    statMemoryUsageMax = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'mem.usage.average')), "", vm, interval)
-    memoryUsageMax = statMemoryUsage[0].value[0].value
-    print()
-    print('Server Name                    :', summary.config.name)
-    print('[VM] CPU (%)                   : {:.0f} %'.format(cpuUsage))
-    print('[VM] CPU max(%)                : ' + str(int(max(cpuUsageMax)/100)) + ' %')
-    print()
-    print('[VM] Memory                    : {:.0f} %'.format(memoryUsage / 100))
-    print('[VM] Memory max                : ' + str(int(max(memoryUsageMax) / 100)) + ' %')
-
 def StatCheck(perf_dict, counter_name):
     counter_key = perf_dict[counter_name]
     return counter_key
@@ -160,6 +127,7 @@ def create_vm_object(name, vm, content, vchtime, interval, perf_dict, ):
     statInt = 360
     cpuNum = vm.summary.config.numCpu
     memSize = vm.summary.config.memorySizeMB
+    disks = vm.summary.vm.guest.disk
     #CPU Usage
     statCpuUsage = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'cpu.usage.average')), "", vm, interval)
     cpuUsageLen = len(statCpuUsage[0].value[0].value)
@@ -174,7 +142,12 @@ def create_vm_object(name, vm, content, vchtime, interval, perf_dict, ):
 	#RAM Max
     statMemoryUsageMax = BuildQuery(content, vchtime, (StatCheck(perf_dict, 'mem.usage.average')), "", vm, interval)
     memoryUsageMax = int(max(statMemoryUsage[0].value[0].value)/100)
-    return VM(name, cpuNum, cpuUsage, cpuUsageMax, memSize, memoryUsage, memoryUsageMax)
+    #disk usage
+    c_free = ''
+    for disk in disks:
+        if disk.diskPath == 'C:\\' or disk.diskPath == '/':
+            c_free = int(((disk.freeSpace / 1024) / 1024))
+    return VM(name, cpuNum, cpuUsage, cpuUsageMax, memSize, memoryUsage, memoryUsageMax, c_free)
     
 
 
@@ -229,16 +202,8 @@ def main():
             print(create_vm_object(vm['name'], vm['moref'], content, vchtime, interval, perf_dict))
             vm_objects.append(create_vm_object(vm['name'], vm['moref'], content, vchtime, interval, perf_dict))
         elif vm['name'] in vmnames:
-            vm_objects.append(VM(vm['name'], 999, None, None, None, None, None))
+            vm_objects.append(VM(vm['name'], 999, None, None, None, None, None, None))
             #print('ERROR: Problem connecting to Virtual Machine.  {} is likely powered off or suspended'.format(vm['name']))
-    '''
-    except vmodl.MethodFault as e:
-        print('Caught vmodl fault : ' + e.msg)
-        return -1
-    except Exception as e:
-        print('Caught exception : ' + str(e))
-        return -1
-    '''
 
     render_html(vm_objects)
     return 0

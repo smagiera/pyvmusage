@@ -12,7 +12,7 @@
   </head>
   <body>
     <div class="container">
-        <table class="table table-striped">
+        <table class="table table-striped" id="vmtable">
             <thead>
                 <tr>
                     <th scope="col">#</th>
@@ -23,6 +23,7 @@
                     <th scope="col">RAM dost.</th>
                     <th scope="col">RAM max</th>
                     <th scope="col">RAM avg</th>
+                    <th scope="col">Disk C free(MB)</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,9 +38,11 @@
                     <td>{{item.mem_size}} MB</td>
                     <td>{{item.mem_max}}%</td>
                     <td>{{item.mem_avg}}%</td>
+                    <td>{{item.c_free}}</td>
                     {% else %}
                     <td>{{loop.index}}.</td>
                     <td class="text-muted">{{item.name}}</td>
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -53,4 +56,32 @@
         </table>
     </div>
   </body>
+  {% raw %}
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.0/b-html5-1.6.0/datatables.min.css"/>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+  <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.0/b-html5-1.6.0/datatables.min.js"></script>
+  
+  <script>
+  $(document).ready( function () {
+      var table = $('#vmtable').DataTable({
+        columns: [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          {"type": "num"}
+        ],
+        dom: 'lfrtipB',
+        buttons: [
+            'copy', 'excel', 'pdf'
+    ]
+});
+  });
+</script>
+{% endraw %}
 </html>
